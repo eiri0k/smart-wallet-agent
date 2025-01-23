@@ -1,136 +1,15 @@
 import { Logger } from "./logger";
 import { RoomManager } from "./room-manager";
-import type { VectorDB } from "./vector-db";
-import { LogLevel } from "../types";
+import type { VectorDB } from "../types";
+import { LogLevel, type Input, type LoggerConfig, type Output } from "../types";
 import type { Processor } from "./processor";
-import type { z } from "zod";
-
-/**
- * Interface for defining input handlers that can be registered with the Core system.
- * @template T The type of data returned by the input handler
- */
-export interface Input<T = unknown> {
-  /** Unique identifier for this input */
-  name: string;
-  /** Handler function that processes the input and returns a Promise of type T */
-  handler: (...args: unknown[]) => Promise<T>;
-  /** Zod schema for validating the response */
-  response: z.ZodType<T>;
-
-  /**
-   * Optional interval in milliseconds for recurring inputs.
-   * If set, the input will run repeatedly at this interval.
-   * @example
-   * ```ts
-   * // Run every minute
-   * interval: 60000
-   * ```
-   */
-  interval?: number;
-
-  /**
-   * Optional timestamp for when this input should next run.
-   * If omitted, defaults to immediate execution (Date.now()).
-   */
-  nextRun?: number;
-}
-
-/**
- * Interface for defining output handlers that can be registered with the Core system.
- * @template T The type of data the output handler accepts
- */
-export interface Output<T = unknown> {
-  /** Unique identifier for this output */
-  name: string;
-  /** Handler function that processes the output data */
-  handler: (data: T) => Promise<unknown>;
-  /** Zod schema for validating the input data */
-  schema: z.ZodType<T>;
-}
-
-/**
- * Configuration options for the Core system
- */
-export interface CoreConfig {
-  /** Logging configuration */
-  logging?: {
-    /** Log level to use */
-    level: LogLevel;
-    /** Whether to enable colored output */
-    enableColors?: boolean;
-    /** Whether to include timestamps in logs */
-    enableTimestamp?: boolean;
-  };
-}
-
-/**
- * Priority queue implementation for scheduling tasks.
- * Tasks are ordered by their nextRun timestamp.
- * @template T Type must include a nextRun timestamp property
- */
-class TaskScheduler<T extends { nextRun: number }> {
-  private tasks: T[] = [];
-  private timerId?: NodeJS.Timeout;
-
-  /**
-   * @param onTaskDue Callback executed when a task is due to run
-   */
-  constructor(private readonly onTaskDue: (task: T) => Promise<void>) {}
-
-  /**
-   * Schedules a new task or updates an existing one.
-   * Tasks are automatically sorted by nextRun timestamp.
-   * @param task The task to schedule
-   */
-  public scheduleTask(task: T): void {
-    this.tasks = this.tasks.filter((t) => t !== task);
-    this.tasks.push(task);
-    this.tasks.sort((a, b) => a.nextRun - b.nextRun);
-    this.start();
-  }
-
-  /**
-   * Starts or restarts the scheduler timer for the next due task.
-   * @private
-   */
-  private start() {
-    if (this.timerId) {
-      clearTimeout(this.timerId);
-      this.timerId = undefined;
-    }
-    if (this.tasks.length === 0) return;
-
-    const now = Date.now();
-    const earliestTask = this.tasks[0];
-    const delay = Math.max(0, earliestTask.nextRun - now);
-
-    this.timerId = setTimeout(async () => {
-      this.timerId = undefined;
-      const task = this.tasks.shift();
-      if (!task) return;
-
-      await this.onTaskDue(task);
-
-      if (this.tasks.length) {
-        this.start();
-      }
-    }, delay) as unknown as NodeJS.Timeout;
-  }
-
-  /**
-   * Stops the scheduler and clears all pending tasks.
-   */
-  public stop() {
-    if (this.timerId) clearTimeout(this.timerId);
-    this.tasks = [];
-  }
-}
+import { TaskScheduler } from "./task-scheduler";
 
 /**
  * Core system that manages inputs, outputs, and processing.
  * Coordinates between input sources, the processor, and output handlers.
  */
-export class Core {
+export class Orchestrator {
   private readonly inputs = new Map<string, Input & { nextRun: number }>();
   private readonly outputs = new Map<string, Output>();
   private readonly logger: Logger;
@@ -150,12 +29,12 @@ export class Core {
     private readonly roomManager: RoomManager,
     vectorDb: VectorDB,
     processor: Processor,
-    config?: CoreConfig
+    config?: LoggerConfig
   ) {
     this.vectorDb = vectorDb;
     this.processor = processor;
     this.logger = new Logger(
-      config?.logging ?? {
+      config ?? {
         level: LogLevel.ERROR,
         enableColors: true,
         enableTimestamp: true,
@@ -163,7 +42,7 @@ export class Core {
     );
 
     this.inputScheduler = new TaskScheduler(async (task) => {
-      await this.handleInput(task);
+      await this.processInputTask(task);
     });
   }
 
@@ -172,7 +51,7 @@ export class Core {
    * If the input is recurring (has an interval), it will be scheduled to run repeatedly.
    * @param input The input configuration to register
    */
-  public registerInput(input: Input): void {
+  public subscribeToInputSource(input: Input): void {
     const now = Date.now();
     const nextRun = input.nextRun ?? now;
 
@@ -180,7 +59,7 @@ export class Core {
     this.inputs.set(input.name, scheduledInput);
     this.inputScheduler.scheduleTask(scheduledInput);
 
-    this.logger.info("Core.registerInput", "Registered input", {
+    this.logger.info("Core.subscribeToInputSource", "Registered input", {
       name: input.name,
       nextRun,
       interval: input.interval,
@@ -191,11 +70,14 @@ export class Core {
    * Removes a registered input handler.
    * @param name Name of the input to remove
    */
-  public removeInput(name: string): void {
+  public unsubscribeFromInputSource(name: string): void {
     const input = this.inputs.get(name);
     if (input) {
       this.inputs.delete(name);
-      this.logger.info("Core.removeInput", `Removed input: ${name}`);
+      this.logger.info(
+        "Core.unsubscribeFromInputSource",
+        `Removed input: ${name}`
+      );
     }
   }
 
@@ -215,10 +97,10 @@ export class Core {
    * Removes a registered output handler.
    * @param name Name of the output to remove
    */
-  public removeOutput(name: string): void {
+  public removeOutputHandler(name: string): void {
     if (this.outputs.has(name)) {
       this.outputs.delete(name);
-      this.logger.info("Core.removeOutput", `Removing output: ${name}`);
+      this.logger.info("Core.removeOutputHandler", `Removing output: ${name}`);
     }
   }
 
@@ -227,7 +109,9 @@ export class Core {
    * @param input The input to handle
    * @private
    */
-  private async handleInput(input: Input & { nextRun: number }): Promise<void> {
+  private async processInputTask(
+    input: Input & { nextRun: number }
+  ): Promise<void> {
     const { name, interval } = input;
 
     try {
@@ -260,7 +144,7 @@ export class Core {
         }
       }
     } catch (error) {
-      this.logger.error("Core.handleInput", "Error processing input", {
+      this.logger.error("Core.processInputTask", "Error processing input", {
         name,
         error,
       });
@@ -274,12 +158,15 @@ export class Core {
    * @returns The result of the output handler
    * @template T The type of data the output handler accepts
    */
-  public async executeOutput<T>(name: string, data: T): Promise<T> {
+  public async dispatchToOutput<T>(name: string, data: T): Promise<T> {
     const output = this.outputs.get(name);
     if (!output) {
       throw new Error(`No output registered with name: ${name}`);
     }
-    this.logger.debug("Core.executeOutput", "Executing output", { name, data });
+    this.logger.debug("Core.dispatchToOutput", "Executing output", {
+      name,
+      data,
+    });
 
     try {
       return data;
