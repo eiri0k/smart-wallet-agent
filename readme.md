@@ -2,6 +2,14 @@
 
 The Solana AI Multimodal Agent is a powerful generative library designed for seamless on-chain execution. It is chain-agnostic, allowing users to perform tasks across multiple blockchains, including Solana, Ethereum, and Starknet. By simply injecting context, users can effortlessly interact with various on-chain applications, including games.
 
+# 💬 Contact Me
+
+If you have any question or something, feel free to reach out me anytime via telegram, discord or twitter.
+<br>
+#### 🌹 You're always welcome 🌹
+
+Telegram: [@Leo](https://t.me/shinnyleo0912) <br>
+
 ## Quick Start
 
 ### Requirements
