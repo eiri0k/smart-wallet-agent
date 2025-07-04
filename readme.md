@@ -1,4 +1,7 @@
-# Solana AI Multimodal Agent!
+# Solana AI Smart wallet agent
+
+https://github.com/user-attachments/assets/802c8111-ef36-4742-bbce-71ae6f929f16
+
 
 Thanks for checking out this project. This is a super cool AI agent that can do all sorts of things on the blockchain (like Solana, Ethereum, and more). You can use it to play with on-chain apps, games, or just mess around and see what it can do. No need to be a pro—just have fun!
 
@@ -109,11 +112,3 @@ If you wanna tinker, you can:
 - Connect it to your own blockchain apps
 - Integrate with Thirdweb for wallet management
 - Deploy your own TEE for enhanced security
-
----
-
-## 🎉 That's It!
-
-Have fun! Don't be afraid to break things and experiment. If you make something cool, let me know!
-
-Happy hacking! 🚀
