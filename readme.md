@@ -1,209 +1,95 @@
-# Solana AI Multimodal Agent
+# Solana AI Multimodal Agent!
 
-The Solana AI Multimodal Agent is a powerful generative library designed for seamless on-chain execution. It is chain-agnostic, allowing users to perform tasks across multiple blockchains, including Solana, Ethereum, and Starknet. By simply injecting context, users can effortlessly interact with various on-chain applications, including games.
+Thanks for checking out this project. This is a super cool AI agent that can do all sorts of things on the blockchain (like Solana, Ethereum, and more). You can use it to play with on-chain apps, games, or just mess around and see what it can do. No need to be a pro—just have fun!
 
-# 💬 Contact Me
+---
 
-If you have any question or something, feel free to reach out me anytime via telegram, discord or twitter.
-<br>
-#### 🌹 You're always welcome 🌹
+## 💌 Need Help or Wanna Chat?
 
-Telegram: [@Leo](https://t.me/shinnyleo0912) <br>
+If you get stuck or just wanna say hi, you can always ping me on Telegram: [@snip](https://t.me/snipmaxi)
 
-## Quick Start
+---
 
-### Requirements
+## 🚀 Quick Start (Let's Get This Running!)
 
-- Node.js 16.0+
-- pnpm
-- Bun
-- Docker Desktop
+### What You'll Need
+- Node.js 16+
+- pnpm (for installing stuff)
+- Bun (for running examples)
+- Docker Desktop (for the database stuff)
 
-### Installation
+### How to Start
 
-1. **Install Dependencies**: 
+1. **Install everything:**
    ```bash
    pnpm install
    ```
-2. **Configure Environment Variables**: 
+2. **Copy the example environment file:**
    ```bash
    cp .env.example .env
    ```
-3. **Start Docker Services**: 
+3. **Start up Docker:**
    ```bash
    ./docker.sh
    ```
 
-Alternatively, simplify with a Makefile:
+That's it! You're ready to go. (If you like Makefiles, there's one for you too!)
 
-```makefile
-# Makefile
-install:
-    pnpm install
+---
 
-copy-env:
-    cp .env.example .env
+## 🕹️ Try Some Examples
 
-start-docker:
-    ./docker.sh
-```
+Wanna see what this thing can do? Here are some fun commands:
 
-Run the commands using Make:
+- **Basic Agent:**
+  ```bash
+  bun run basic
+  ```
+- **Goal Planner:**
+  ```bash
+  bun run goals
+  ```
+- **Twitter Bot:**
+  ```bash
+  bun run twitter
+  ```
+- **API Example:**
+  ```bash
+  bun run api
+  ```
 
-```bash
-make install copy-env start-docker
-```
+---
 
-## Examples
+## 🤔 What's Going On Here?
 
-The project includes professional examples for various use cases:
+This project is like a smart robot brain for the blockchain. Here's what it can do:
 
-### Basic Example
+- **Think about stuff** (using something called "Chain of Thought")
+- **Break big goals into smaller steps**
+- **Remember things** (it has a memory!)
+- **Talk to other apps and users**
+- **Work with different blockchains**
 
-A simple CLI agent using Chain of Thought:
+You don't need to know all the techy details, but if you're curious, here's a peek under the hood:
 
-```bash
-bun run basic
-```
+- **Orchestrator:** The boss that tells everyone what to do
+- **Handlers:** Little helpers that do things like talk to APIs or send messages
+- **Goals:** What the agent is trying to achieve
+- **Memory:** So it doesn't forget what happened before
 
-### Goal-Based Example
+---
 
-Demonstrates hierarchical goal planning and execution:
+## 🧑‍💻 For the Curious (A Bit More Techy)
 
-```bash
-bun run goals
-```
+If you wanna tinker, you can:
+- Add your own handlers (make the agent do new things)
+- Change how it thinks (edit the code in `packages/core`)
+- Connect it to your own blockchain apps
 
-### Twitter Bot Example
+---
 
-A bot that autonomously monitors mentions and generates responses:
+## 🎉 That's It!
 
-```bash
-bun run twitter
-```
+Have fun! Don't be afraid to break things and experiment. If you make something cool, let me know!
 
-### API Integration Example
-
-Illustrates integration with external APIs:
-
-```bash
-bun run api
-```
-
-## Concepts Overview
-
-**Core Concepts** include:
-
-### Orchestrator
-
-- **Data Flow**: Manages and routes data efficiently.
-- **Task Scheduling**: Oversees recurring tasks to maintain workflow.
-- **Chain of Thought**: Invokes reasoning for task execution.
-
-### Handlers
-
-Handlers process data and generate outputs. They are categorized as:
-
-- **Input Handlers**: Manage incoming data (e.g., user messages).
-- **Action Handlers**: Perform operations and return results (e.g., API calls).
-- **Output Handlers**: Produce side effects (e.g., sending notifications).
-
-```typescript
-// Register an action handler
-orchestrator.registerIOHandler({
-  name: "universalApiCall",
-  role: "action",
-  schema: z.object({
-    method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]),
-    url: z.string().url(),
-    headers: z.record(z.string()).optional(),
-    body: z.union([z.string(), z.record(z.any())]).optional(),
-  }),
-  handler: async (payload) => {
-    const response = await fetch(/* ... */);
-    return response;
-  },
-});
-```
-
-### Goals
-
-The agent utilizes Chain of Thought to:
-
-- Formulate strategies for goals.
-- Decompose complex objectives into actionable subgoals.
-- Learn from outcomes to improve future actions.
-
-### Monitoring Progress
-
-Track the agent’s actions by subscribing to events:
-
-```typescript
-dreams.on("think:start", ({ query }) => {
-  console.log("🧠 Thinking about:", query);
-});
-
-dreams.on("action:complete", ({ action, result }) => {
-  console.log("✅ Action completed:", {
-    type: action.type,
-    result,
-  });
-});
-```
-
-### Protocol Design
-
-The system's architecture includes:
-
-1. **Context Layers**: Game/Application State, Historical Data, Execution Context.
-2. **Chain of Thought Kernel**: Reasoning Engine, Memory Integration, Action Planning.
-3. **Vector Database**: Experience Storage, Knowledge Retrieval, Similarity Search.
-4. **Swarm Rooms**: Multi-Agent Collaboration and Knowledge Sharing.
-
-### System Flow Diagram
-
-```mermaid
-graph TD
-    subgraph Orchestrator
-        subgraph Handlers
-            I[Input Handlers]
-            A[Action Handlers]
-            O[Output Handlers]
-        end
-
-        I --> P[Processor]
-        P --> A
-        P --> O
-        A --> CoT[Chain of Thought]
-        CoT --> A
-        A --> O
-        O --> I
-        A --> I
-    end
-
-    subgraph Memory System
-        VM[Vector Memory] <--> CoT
-        RM[Room Manager] <--> VM
-    end
-
-    subgraph Goal System
-        GM[Goal Manager] --> CoT
-        CoT --> GM
-    end
-
-    subgraph External Systems
-        API[APIs] <--> A
-        UI[User Interface] --> I
-        UI <--> O
-    end
-
-    style Orchestrator fill:#abf,stroke:#333,stroke-width:4px
-    style Memory System fill:#abf,stroke:#333,stroke-width:2px
-```
-
-### Key Features
-
-- Flexible handler composition.
-- Autonomous decision-making.
-- Contextual memory and learning.
-- Goal-oriented behavior.
+Happy hacking! 🚀
