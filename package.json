@@ -11,7 +11,12 @@
         "release": "pnpm build && pnpm prettier && npx lerna publish --no-private --force-publish",
         "prettier-check": "pnpx prettier --check packages",
         "prettier": "pnpx prettier --write packages",
-        "knip": "knip"
+        "knip": "knip",
+        "backend:dev": "cd backend && npm run start:dev",
+        "backend:build": "cd backend && npm run build",
+        "backend:start": "cd backend && npm run start:prod",
+        "backend:test": "cd backend && npm run test",
+        "backend:test:e2e": "cd backend && npm run test:e2e"
     },
     "dependencies": {
         "@mendable/firecrawl-js": "^1.15.7",
